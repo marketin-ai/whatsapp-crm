@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: whatsapp-crm-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - whatsapp-crm-network
+
+  backend:
+    build: .
+    container_name: whatsapp-crm-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      AI_API_KEY: ${AI_API_KEY}
+    volumes:
+      - ./sessions:/app/sessions
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mysql
+    networks:
+      - whatsapp-crm-network
+
+  frontend:
+    image: php:7.4-apache
+    container_name: whatsapp-crm-frontend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/var/www/html
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - whatsapp-crm-network
+
+volumes:
+  mysql_data:
+
+networks:
+  whatsapp-crm-network:
+    driver: bridge
